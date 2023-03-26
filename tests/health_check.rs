@@ -1,8 +1,11 @@
 use std::net::TcpListener;
 
-use sqlx::{PgPool, PgConnection, Connection, Executor};
+use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use zero2prod::{configuration::{get_configuration, DatabaseSettings}, startup::run};
+use zero2prod::{
+    configuration::{get_configuration, DatabaseSettings},
+    startup::run,
+};
 
 pub struct TestApp {
     pub address: String,
@@ -80,8 +83,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
 }
 
 async fn spawn_app() -> TestApp {
-    let listener = TcpListener::bind("127.0.0.1:0")
-        .expect("Failed to bind random port");
+    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
 
@@ -100,10 +102,7 @@ async fn spawn_app() -> TestApp {
 }
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
-
-    let mut connection = PgConnection::connect(
-            &config.connection_string_without_db()
-        )
+    let mut connection = PgConnection::connect(&config.connection_string_without_db())
         .await
         .expect("Failed to connect to Postgres.");
 
