@@ -27,8 +27,9 @@ features = [
     "macros",
     "postgres",
     "uuid",
-"chrono",
-"migrate"
+    "chrono",
+    "migrate",
+    "offline"
 ]
 
 [dev-dependencies]
