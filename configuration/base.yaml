@@ -1,6 +1,5 @@
-# configuration.yaml
 application:
-  port:8000
+  port: 8000
 database:
   database_name: "newsletter"
   host: "127.0.0.1"
