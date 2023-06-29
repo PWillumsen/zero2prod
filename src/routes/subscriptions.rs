@@ -61,17 +61,21 @@ pub async fn subscribe(
 
     let subscription_token = generate_subscription_token();
 
-    if let Err(_) = store_token(&pool, subscriber_id, &subscription_token).await {
+    if store_token(&pool, subscriber_id, &subscription_token)
+        .await
+        .is_err()
+    {
         return HttpResponse::InternalServerError().finish();
     }
 
-    if let Err(_) = send_confirmation_email(
+    if send_confirmation_email(
         &email_client,
         new_subscriber,
         &base_url.0,
         &subscription_token,
     )
     .await
+    .is_err()
     {
         return HttpResponse::InternalServerError().finish();
     }
