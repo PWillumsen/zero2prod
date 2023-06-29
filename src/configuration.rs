@@ -45,9 +45,10 @@ pub struct DatabaseSettings {
 
 #[derive(serde::Deserialize, Clone)]
 pub struct ApplicationSettings {
-    pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
+    pub host: String,
+    pub base_url: String,
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
