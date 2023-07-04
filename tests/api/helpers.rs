@@ -69,6 +69,7 @@ impl TestApp {
         let client = reqwest::Client::new();
         client
             .post(&format!("{}/newsletters", &self.address))
+            .basic_auth(Uuid::new_v4().to_string(), Some(Uuid::new_v4().to_string()))
             .json(&body)
             .send()
             .await
