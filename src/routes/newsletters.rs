@@ -10,7 +10,9 @@ use actix_web::{
 };
 use anyhow::Context;
 use base64::Engine;
+use secrecy::ExposeSecret;
 use secrecy::Secret;
+use sha3::Digest;
 use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
@@ -61,6 +63,14 @@ impl std::fmt::Debug for PublishError {
     }
 }
 
+#[tracing::instrument(
+    name = "Publish a newsletter issue",
+    skip(body, pool, email_client, request),
+    fields(
+        username = tracing::field::Empty,
+        user_id = tracing::field::Empty,
+    )
+)]
 pub async fn publish_newsletter(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
@@ -68,6 +78,9 @@ pub async fn publish_newsletter(
     request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
     let credentials = basic_authentication(request.headers()).map_err(PublishError::AuthError)?;
+    tracing::Span::current().record("username", &tracing::field::display(&credentials.username));
+    let user_id = validate_credentials(credentials, &pool).await?;
+    tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
     let subscribers = get_confirmed_subscribers(&pool).await?;
 
     for subscriber in subscribers {
@@ -152,4 +165,27 @@ async fn get_confirmed_subscribers(
         .collect();
 
     Ok(confirmed_subscribers)
+}
+
+async fn validate_credentials(
+    credentials: Credentials,
+    pool: &PgPool,
+) -> Result<uuid::Uuid, PublishError> {
+    let password_hash = sha3::Sha3_256::digest(credentials.password.expose_secret().as_bytes());
+    let password_hash = format!("{:x}", password_hash);
+
+    let user_id: Option<_> = sqlx::query!(
+        r#"SELECT user_id FROM users WHERE username = $1 AND password_hash = $2"#,
+        credentials.username,
+        password_hash,
+    )
+    .fetch_optional(pool)
+    .await
+    .context("Failed to query the database")
+    .map_err(PublishError::UnexpectedError)?;
+
+    user_id
+        .map(|row| row.user_id)
+        .ok_or_else(|| anyhow::anyhow!("Invalid credentials"))
+        .map_err(PublishError::AuthError)
 }
