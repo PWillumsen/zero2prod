@@ -1,5 +1,6 @@
 application:
   port: 8000
+  hmac_secret: "5Um^22psmd6M*Bhtj^3yyX8RoHK3qmx$Cj5sRrGUrZ9u@M3e9JbcJiN2LGuRJa#VYDwYP5NnDfoTH^PERo7C**vUfM#j$4n$"
 database:
   database_name: "newsletter"
   host: "127.0.0.1"
@@ -11,3 +12,4 @@ email_client:
   sender_email: "test@gmail.com"
   authorization_token: "my-secret-token"
   timeout_milliseconds: 10000
+redis_uri: "redis://127.0.0.1:6379"
