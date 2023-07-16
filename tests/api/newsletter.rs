@@ -121,4 +121,3 @@ async fn you_must_be_logged_in_to_publish_a_newsletter() {
     // Assert
     assert_is_redirect_to(&response, "/login");
 }
-

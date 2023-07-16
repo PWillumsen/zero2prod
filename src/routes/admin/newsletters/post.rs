@@ -15,6 +15,7 @@ pub struct FormData {
     text_content: String,
 }
 
+// TODO:: Validate the form data
 #[tracing::instrument(
     name = "Publish a newsletter issue",
     skip(form, pool, email_client,  user_id),
