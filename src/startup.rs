@@ -1,17 +1,21 @@
-use crate::configuration::{DatabaseSettings, Settings};
-use crate::email_client::EmailClient;
-use crate::routes::admin_dashboard;
-use crate::routes::{
-    change_password, change_password_form, confirm, health_check, home, log_out, login, login_form,
-    publish_newsletter, subscribe,
+use crate::{
+    authentication::reject_anonymous_users,
+    routes::{
+        change_password, change_password_form, confirm, health_check, home, log_out, login,
+        login_form, publish_newsletter, subscribe,
+    },
 };
-use actix_session::storage::RedisSessionStore;
-use actix_session::SessionMiddleware;
+use crate::{
+    configuration::{DatabaseSettings, Settings},
+    email_client::EmailClient,
+    routes::admin_dashboard,
+};
+use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, dev::Server, web, App, HttpServer};
 use actix_web_flash_messages::{storage::CookieMessageStore, FlashMessagesFramework};
+use actix_web_lab::middleware::from_fn;
 use secrecy::{ExposeSecret, Secret};
-use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 
@@ -70,8 +74,8 @@ pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
 
 pub struct ApplicationBaseUrl(pub String);
 
-#[derive(Clone)]
-pub struct HmacSecret(pub Secret<String>);
+// #[derive(Clone)]
+// pub struct HmacSecret(pub Secret<String>);
 
 async fn run(
     listener: TcpListener,
@@ -101,17 +105,21 @@ async fn run(
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(login))
             .route("/health_check", web::get().to(health_check))
-            .route("/subscriptions/confirm", web::get().to(confirm))
-            .route("/subscriptions", web::post().to(subscribe))
             .route("/newsletters", web::post().to(publish_newsletter))
-            .route("/admin/dashboard", web::get().to(admin_dashboard))
-            .route("/admin/password", web::get().to(change_password_form))
-            .route("/admin/password", web::post().to(change_password))
-            .route("/admin/logout", web::post().to(log_out))
+            .route("/subscriptions", web::post().to(subscribe))
+            .route("/subscriptions/confirm", web::get().to(confirm))
+            .service(
+                web::scope("admin")
+                    .wrap(from_fn(reject_anonymous_users))
+                    .route("/dashboard", web::get().to(admin_dashboard))
+                    .route("/password", web::get().to(change_password_form))
+                    .route("/password", web::post().to(change_password))
+                    .route("/logout", web::post().to(log_out)),
+            )
             .app_data(pool.clone())
             .app_data(email_client.clone())
             .app_data(base_url.clone())
-            .app_data(web::Data::new(HmacSecret(hmac_secret.clone())))
+        // .app_data(web::Data::new(HmacSecret(hmac_secret.clone())))
     })
     .listen(listener)?
     .run();
