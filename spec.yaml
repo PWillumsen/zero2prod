@@ -66,3 +66,5 @@ databases:
     size: db-s-dev-database
     # Postgres version - using the latest here
     version: "12"
+
+SET UP REDIS on DigitalOcean
